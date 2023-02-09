@@ -1,4 +1,21 @@
-## 解压
+## 官方源安装
+1. 查看是否存在其他版本`yum list installed | grep mysql`
+2. 访问[MySQL Yum Repository](https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/linux-installation-yum-repo.html)获得官方yum源并下载
+3. `yum localinstall mysql80-community-release-el7-7.noarch.rpm`
+4. 查看源是否正常安装`yum repolist all | grep mysql`
+5. 选择版本
+```sh
+yum-config-manager --disable mysql80-community
+yum-config-manager --enable mysql57-community
+```
+6. 安装`yum install mysql-community-server`\
+7. 启动
+```sh
+service mysqld start
+service mysqld status
+```
+参考 [Installing MySQL on Linux Using the MySQL Yum Repository](https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/linux-installation-yum-repo.html#yum-repo-installing-mysql)
+## 解压安装
 ```sh
 mkdir -p /application/mysql
 tar xf 文件名.tar
@@ -41,29 +58,31 @@ chown -R mysql.mysql /data
 
 ## 创建初始数据
 ```sh
+whereis mysql
 mkdir /data/mysql/data -p 
 chown -R mysql.mysql /data 
-mysqld --initialize --user=mysql --basedir=/application/mysql --datadir=/data/mysql/data
+mysqld --initialize --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/data
 ```
 临时密码 y/CS_WX%3a0n
 
 ## 无安全密码初始化
 ```sh
-rm -rf /data/mysql/data/*
-mysqld --initialize-insecure --user=mysql --basedir=/application/mysql --datadir=/data/mysql/data
+whereis mysql
+rm -rf /data/mysql/3306*
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3306
 ```
 ## 启动配置
 ```ini
 cat >/etc/my.cnf <<EOF
 [mysqld]
 user=mysql
-basedir=/application/mysql
-datadir=/data/mysql/data
-socket=/tmp/mysql.sock
+basedir=/usr/bin/mysql
+datadir=/data/mysql/3306
+socket=/var/lib/mysql/mysql.sock
 server_id=6
 port=3306
 [mysql]
-socket=/tmp/mysql.sock
+socket=/var/lib/mysql/mysql.sock
 EOF
 ```
 
@@ -80,7 +99,7 @@ netstat -lnp|grep 330
 - 登录 TCPIP方式\
 `mysql -uroot -p -h 10.0.0.3 -P3306`
 - 登陆 SOCKET方式\
-`mysql -uroot -p -S /tmp/mysql.sock`
+`mysql -uroot -p -S /var/lib/mysql/mysql.sock`
 ## 显示连接用户
 `show processlist;`
 ## 使用SQLyog工具连接

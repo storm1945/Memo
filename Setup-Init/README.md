@@ -1,10 +1,10 @@
 ## 解压
-```
+```sh
 mkdir -p /application/mysql
 tar xf 文件名.tar
 ```
 ## 创建用户
-```
+```sh
 useradd -s /sbin/nologin mysql
 id mysql
 ```
@@ -13,7 +13,7 @@ id mysql
 添加 `export PATH=/application/mysql/bin:$PATH`
 
 ## 解决依赖
-```
+```sh
 find / -name 'libncurses*
 ln -s libncurses.so.6 libncurses.so.5
 ln -s libtinfo.so.6 libtinfo.so.5
@@ -23,7 +23,7 @@ ln -s libtinfo.so.6 libtinfo.so.5
 `mysql -V`
 
 ## 挂载磁盘
-```
+```sh
 mkfs.xfs /dev/sdb
 mkdir /data
 blkid
@@ -34,13 +34,13 @@ df -h
 ```
 
 ## 授权
-```
+```sh
 chown -R mysql.mysql /application/*
 chown -R mysql.mysql /data
 ```
 
 ## 创建初始数据
-```
+```sh
 mkdir /data/mysql/data -p 
 chown -R mysql.mysql /data 
 mysqld --initialize --user=mysql --basedir=/application/mysql --datadir=/data/mysql/data
@@ -48,12 +48,12 @@ mysqld --initialize --user=mysql --basedir=/application/mysql --datadir=/data/my
 临时密码 y/CS_WX%3a0n
 
 ## 无安全密码初始化
-```
+```sh
 rm -rf /data/mysql/data/*
 mysqld --initialize-insecure --user=mysql --basedir=/application/mysql --datadir=/data/mysql/data
 ```
 ## 启动配置
-```
+```ini
 cat >/etc/my.cnf <<EOF
 [mysqld]
 user=mysql
@@ -67,53 +67,52 @@ socket=/tmp/mysql.sock
 EOF
 ```
 
-## 启动数据库(sys-v)
-```
+## 启动数据库(sys-v 旧方式)
+```sh
 cp /application/mysql/support-files/mysql.server /etc/init.d/mysqld
 service mysqld start
 ps -ef |grep mysql
 netstat -lnp|grep 330
 ```
-
 ## 修改密码
 `mysqladmin -uroot -p password oldboy123`
-
 ## 登录
 - 登录 TCPIP方式\
 `mysql -uroot -p -h 10.0.0.3 -P3306`
 - 登陆 SOCKET方式\
 `mysql -uroot -p -S /tmp/mysql.sock`
-
 ## 显示连接用户
 `show processlist;`
-
-使用SQLyog工具连接
-注意关闭防火墙
-以及用户名后白名单
-
-启动维护模式
-mysqld_safe &
-关闭维护模式
-mysqladmin -uroot -p123 shutdown
-
-修改权限使用sqllog进行连接
+## 使用SQLyog工具连接
+防火墙打开对应端口,以及用户名后白名单\
+防火墙状态
+```sh
+systemctl status firewalld.service
+firewall-cmd --zone=public --add-port=3306/tcp --permanent
+systemctl restart firewalld.service
+firewall-cmd --zone=public --list-ports
+```
+## 启动维护模式
+`mysqld_safe &`
+- 关闭维护模式\
+`mysqladmin -uroot -p123 shutdown`
+- 修改权限使用sqlyog进行连接
+```sql
 use mysql;
 show tables;
 select Host, User from user;
 update user set Host='%' where User='root';
 flush privileges;
-
-ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'password';
-password是密码
-
-防火墙状态
-systemctl status firewalld.service
-firewall-cmd --zone=public --add-port=3306/tcp --permanent
-systemctl restart firewalld.service
-firewall-cmd --zone=public --list-ports
-
-自启动:
+```
+修复报错 `mysql> authentication plugin 'caching_sha2_password' cannot be loaded;`\
+原因:mysql8.0 引入了新特性 caching_sha2_password,这种密码加密方式客户端不支持,客户端支持的是mysql_native_password 这种加密方式.\
+措施:`ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '密码';`\
+参考:[mysql错误：mysql_native_password](https://blog.csdn.net/qq_43395428/article/details/104795256)
+## 自启动
+```sh
 cd /etc/rc.d/
 chmod 755 rc.local
 vi rc.local
-添加service mysqld start
+```
+添加`service mysqld start`
+## 多实例配置

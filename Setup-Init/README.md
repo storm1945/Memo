@@ -11,8 +11,8 @@ yum-config-manager --enable mysql57-community
 6. 安装`yum install mysql-community-server`\
 7. 启动
 ```sh
-service mysqld start
-service mysqld status
+systemctl start mysqld.service
+systemctl status mysqld.service
 ```
 参考 [Installing MySQL on Linux Using the MySQL Yum Repository](https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/linux-installation-yum-repo.html#yum-repo-installing-mysql)
 ## 解压安装

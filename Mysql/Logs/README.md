@@ -15,11 +15,11 @@ select @@log_bin_basename;
 mysqlbinlog --base64-output=decode-rows -vvv mysql_bin.000003
 mysqlbinlog -d 库名 --base64-output=decode-rows -vvv mysql_bin.000003 #按库名过滤功能
 ```
-+ 截取二进制 按position截取,即在二进制文件中的第多少字节.
++ 截取二进制 按position截取,即在二进制文件中的第多少字节.需要保存成文件用作恢复,可以追加 `>tmp.sql`
 ```sh
 mysqlbinlog --base64-output=decode-rows -vvv --start-position=1485 --stop-position=1708 mysql_bin.000003 
 ```
-需要保存成文件用作恢复,可以追加 `>tmp.sql`
+
 # 错误日志
 配置:
 `datadir/hostname.err`
@@ -42,7 +42,6 @@ log_queries_not_using_indexes
 第三方工具: percona-toolkit
 
 # 二进制日志
-
 ## 配置
 ⚠️默认没开启
 ⚠️serverid一定要配置好,因为binlog中包含serverid,不配置则会导致数据库无法启动.

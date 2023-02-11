@@ -53,7 +53,7 @@ df -h
 ## 授权
 ```sh
 chown -R mysql.mysql /application/*
-chown -R mysql.mysql /data
+chown -R mysql.mysql /data/*
 ```
 
 ## 创建初始数据
@@ -68,7 +68,7 @@ mysqld --initialize --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/
 ## 无安全密码初始化
 ```sh
 whereis mysql
-rm -rf /data/mysql/3306*
+rm -rf /data/mysql/3306/data/*
 mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3306
 ```
 ## 启动配置
@@ -103,6 +103,7 @@ netstat -lnp|grep 330
 ## 显示连接用户
 `show processlist;`
 ## 使用SQLyog工具连接
+### 错误2003 网络不通
 防火墙打开对应端口,以及用户名后白名单\
 防火墙状态
 ```sh
@@ -111,10 +112,8 @@ firewall-cmd --zone=public --add-port=3306/tcp --permanent
 systemctl restart firewalld.service
 firewall-cmd --zone=public --list-ports
 ```
-## 启动维护模式
-`mysqld_safe &`
-- 关闭维护模式\
-`mysqladmin -uroot -p123 shutdown`
+
+### 错误1130 主机名不对
 - 修改权限使用sqlyog进行连接
 ```sql
 use mysql;
@@ -133,5 +132,35 @@ cd /etc/rc.d/
 chmod 755 rc.local
 vi rc.local
 ```
-添加`service mysqld start`
+## 启动维护模式
+★使用systemd的系统不再需要mysqld_safe\
+启动维护模式\
+`mysqld_safe &`\
+关闭维护模式\
+`mysqladmin -uroot -p123 shutdown`
 ## 多实例配置
+★使用systemd的系统不再需要mysql_multi,因为systemd具有多实例的管理能力.\
+初始化数据
+```sh
+mysqld --defaults-file=/etc/my.cnf --initialize-insecure --basedir=/usr/bin/mysql --datadir=/data/mysql/3306/data
+mysqld --defaults-file=/etc/my.cnf --initialize-insecure --basedir=/usr/bin/mysql --datadir=/data/mysql/3307/data
+```
+准备配置文件:
+```ini
+[mysqld@3306]
+datadir=/data/mysql/3306/data
+socket=/data/mysql/3306/mysql.sock
+port=3306
+log-error=/data/mysql/3306/mysqld-3306.log
+
+[mysqld@3307]
+datadir=/data/mysql/3307/data
+socket=/data/mysql/3307/mysql.sock
+port=3307
+log-error=/data/mysql/3307/mysqld-3307.log
+```
+```sh
+systemctl start mysqld@3306
+systemctl start mysqld@3307
+```
+参考 [Managing MySQL Server with systemd](https://dev.mysql.com/doc/refman/5.7/en/using-systemd.html#systemd-multiple-mysql-instances)

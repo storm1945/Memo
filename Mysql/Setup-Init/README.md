@@ -95,13 +95,6 @@ netstat -lnp|grep 330
 ```
 ## 修改密码
 `mysqladmin -uroot -p password oldboy123`
-## 登录
-- 登录 TCPIP方式\
-`mysql -uroot -p -h 10.0.0.3 -P3306`
-- 登陆 SOCKET方式\
-`mysql -uroot -p -S /var/lib/mysql/mysql.sock`
-## 显示连接用户
-`show processlist;`
 ## 使用SQLyog工具连接
 ### 错误2003 网络不通
 防火墙打开对应端口,以及用户名后白名单\
@@ -112,7 +105,6 @@ firewall-cmd --zone=public --add-port=3306/tcp --permanent
 systemctl restart firewalld.service
 firewall-cmd --zone=public --list-ports
 ```
-
 ### 错误1130 主机名不对
 - 修改权限使用sqlyog进行连接
 ```sql
@@ -133,13 +125,13 @@ chmod 755 rc.local
 vi rc.local
 ```
 ## 启动维护模式
-★使用systemd的系统不再需要mysqld_safe\
+⚠️使用systemd的系统不再需要mysqld_safe\
 启动维护模式\
 `mysqld_safe &`\
 关闭维护模式\
 `mysqladmin -uroot -p123 shutdown`
 ## 多实例配置
-★使用systemd的系统不再需要mysql_multi,因为systemd具有多实例的管理能力.\
+⚠️使用systemd的系统不再需要mysql_multi,因为systemd具有多实例的管理能力.\
 初始化数据
 ```sh
 mysqld --defaults-file=/etc/my.cnf --initialize-insecure --basedir=/usr/bin/mysql --datadir=/data/mysql/3306/data
@@ -164,3 +156,18 @@ systemctl start mysqld@3306
 systemctl start mysqld@3307
 ```
 参考 [Managing MySQL Server with systemd](https://dev.mysql.com/doc/refman/5.7/en/using-systemd.html#systemd-multiple-mysql-instances)
+
+## 登录MySQL
+- 登录 TCPIP方式\
+`mysql -u用户名 -p密码 -h 主机名称或地址 -P端口号`
+- 登陆 SOCKET方式\
+`mysql -uroot -p密码 -S /var/lib/mysql/mysql.sock`
+- `-e`执行sql语句\
+`mysql -e "select @@port;"`
+-多实例登录\
+```sh
+mysql -S /data/mysql/3306/mysql.sock
+mysql -S /data/mysql/3307/mysql.sock
+```
+## 显示连接用户
+`show processlist;`

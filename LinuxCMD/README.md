@@ -7,6 +7,8 @@
 ## 查询网络
 ### 查看网络连接
 `ifconfig`
+### 查看监听端口
+`netstat -lnp|grep 330`
 ## 进程查询
 `ps -e|grep mysql`
 

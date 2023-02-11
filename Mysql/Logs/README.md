@@ -1,6 +1,25 @@
 # 常用命令
 ## binlog
-
++ 查看二进制位置
+```sql
+show variables like '%log_bin%';
+select @@log_bin_basename;
+```
++ 查看所有的日志 `show binary logs;`
++ 日志滚动 结束当前文件记录,产生新的日志文件`flush log;`
++ 查看当前使用的二进制 `show master status;`
++ 查看全部的二进制列表 `show master logs;`
++ 查看二进制事件 `show binlog events in 'mysql_bin.000003';`
++ 在linux下使用工具查看文件(带翻译)
+```sh
+mysqlbinlog --base64-output=decode-rows -vvv mysql_bin.000003
+mysqlbinlog -d 库名 --base64-output=decode-rows -vvv mysql_bin.000003 #按库名过滤功能
+```
++ 截取二进制 按position截取,即在二进制文件中的第多少字节.
+```sh
+mysqlbinlog --base64-output=decode-rows -vvv --start-position=1485 --stop-position=1708 mysql_bin.000003 
+```
+需要保存成文件用作恢复,可以追加 `>tmp.sql`
 # 错误日志
 配置:
 `datadir/hostname.err`
@@ -11,7 +30,7 @@
 ```ini
 slow_query_log=1
 ##文件位置及名称
-slow_query_log_file=/data/slow.log
+slow_query_log_file=/data/mysql/3306/log/slow.log
 ##设定慢查询时间
 long_query_time=0.1
 ##没走索引的语句也记录
@@ -26,7 +45,9 @@ log_queries_not_using_indexes
 
 ## 配置
 ⚠️默认没开启
+⚠️serverid一定要配置好,因为binlog中包含serverid,不配置则会导致数据库无法启动.
 ```ini
+server_id=3
 log_bin=/data/mysql/3306/log/mysql_bin #开启并设置文件路径
 binlog_format=row
 ```
@@ -58,55 +79,8 @@ a			事件2
 b			事件3
 commit;		事件4
 
-查看二进制位置
-show variables like '%log_bin%';
-select @@log_bin_basename;
 
-查看所有的日志
-show binary logs;
-
-日志滚动(结束当前文件记录,产生新的日志文件)
-flush log;
-
-查看正在使用的二进制:
-show master status;
-
-查看二进制事件:
-show binlog events in 'mysql_bin.000003';
-
-在linux下使用工具查看文件(带翻译):
-mysqlbinlog --base64-output=decode-rows -vvv mysql_bin.000003
-mysqlbinlog -d haoge --base64-output=decode-rows -vvv mysql_bin.000003(带过滤功能)
-
-截取二进制(position在二进制文件中的第多少个字节)
-mysqlbinlog --base64-output=decode-rows -vvv --start-position=1485 --stop-position=1708 mysql_bin.000003 
-
-截取并保存成文件,可以用作恢复
-mysqlbinlog --start-position=1485 --stop-position=1708 mysql_bin.000003 >tmp.sql
-
-使用日志恢复实例:
-1.建库建表
-create database haoge charset utf8mb4;
-use haoge;
-create table t1(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'ID',
-v varchar(30) NOT NULL COMMENT 'Value');
-insert into t1(v) values('A');
-insert into t1(v) values('B');
-insert into t1(v) values('C');
-commit;
-
-2.打开日志确定位置
-show master status;
-show binlog events in 'mysql_bin.000003';
-mysqlbinlog --start-position=1773 --stop-position=2723 mysql_bin.000003 >tmp.sql
-
-3.恢复binlog
-当前会话临时关闭binlog
-set sql_log_bin=0;
-source /data/tmp.sql
-set sql_log_bin=1;
-
---binlog的gtid记录模式的管理
+## binlog的gtid记录模式的管理
 GTID介绍
 对于binlog中的每个事务(和mysql事务不同概念),都会产生一个GTID号码
 DDL DCL 一个event就是一个事务,就会有一个GTID号
@@ -139,5 +113,27 @@ mysqlbinlog --skip-gtids --include-gtids='4957529a-93d6-11ed-bd8f-080027dd4b93:5
 expire_logs_days=15
 设置的依据:至少1轮全被周期长度+1天
 
-
+## 使用日志恢复实例:
+### 建库建表
+```sql
+create database haoge charset utf8mb4;
+use haoge;
+create table t1(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'ID',
+v varchar(30) NOT NULL COMMENT 'Value');
+insert into t1(v) values('A');
+insert into t1(v) values('B');
+insert into t1(v) values('C');
+commit;
+```
+### 打开日志确定位置
+```sql
+show master status;
+show binlog events in 'mysql_bin.000003';
+mysqlbinlog --start-position=1773 --stop-position=2723 mysql_bin.000003 >tmp.sql
+```
+### 恢复binlog
+当前会话临时关闭binlog
+set sql_log_bin=0;
+source /data/tmp.sql
+set sql_log_bin=1;
 

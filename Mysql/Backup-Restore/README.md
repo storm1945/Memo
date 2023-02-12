@@ -4,7 +4,7 @@
 备份工具: mysqldump, Percona Xtrabackup, MEB(Mysql enterprise Backup)\
 逻辑方式:(备份出来的就是create insert这样的语句,根据数据得来,重构数据库,转换时间较长)\
 全备mysqldump\
-增量binlog\
+增量binlog
 
 ## 备份方式
 物理方式:(主要就是cp磁盘上的文件)\

@@ -10,7 +10,7 @@
 ### 查看监听端口
 `netstat -lnp|grep 330`
 ## 进程查询
-`ps -e|grep mysql`
+`ps -ef|grep mysql`
 
 # 文件操作
 ## 创建
@@ -60,3 +60,5 @@ EOF
 `ssh root@150.158.138.78`
 ## 启动服务 systemD方式
 `systemctl start/stop/enable/disable/status mysqld`
+## 进程管理
+`pkill mysqld`

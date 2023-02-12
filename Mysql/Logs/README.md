@@ -6,7 +6,7 @@ show variables like '%log_bin%';
 select @@log_bin_basename;
 ```
 + 查看所有的日志 `show binary logs;`
-+ 日志滚动 结束当前文件记录,产生新的日志文件`flush log;`
++ 日志滚动 结束当前文件记录,产生新的日志文件`flush logs;`
 + 查看当前使用的二进制 `show master status;`
 + 查看全部的二进制列表 `show master logs;`
 + 查看二进制事件 `show binlog events in 'mysql_bin.000003';`
@@ -86,7 +86,7 @@ DDL DCL 一个event就是一个事务,就会有一个GTID号\
 DML来说begin到commit是一个事务,产生一个GTID号
 
 GTID的组成
-serveri_uuid:TID
+server_uuid:TID
 
 cat auto.cnf
 结果:server-uuid=4957529a-93d6-11ed-bd8f-080027dd4b93

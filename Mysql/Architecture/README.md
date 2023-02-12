@@ -53,7 +53,7 @@ Innodb 段 区 页
 + 一个表就是一个段
 + 一个段由多个区构成
 + 区由页(16k)构成，连续64，总共1M(不变)\
-![物理存储结构](Mysql\Architecture\layers.jpeg "物理存储结构")
+![物理存储结构](https://github.com/storm1945/Memo/blob/master/Mysql/Architecture/phisical-arch.jpeg "物理存储结构")
 
 
 ## 排序规则

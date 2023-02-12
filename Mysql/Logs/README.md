@@ -80,9 +80,9 @@ commit;		事件4
 
 
 ## binlog的gtid记录模式的管理
-GTID介绍
-对于binlog中的每个事务(和mysql事务不同概念),都会产生一个GTID号码
-DDL DCL 一个event就是一个事务,就会有一个GTID号
+### GTID介绍
+对于binlog中的每个binlog事务(和mysql事务不同概念),都会产生一个GTID号码\
+DDL DCL 一个event就是一个事务,就会有一个GTID号\
 DML来说begin到commit是一个事务,产生一个GTID号
 
 GTID的组成
@@ -94,23 +94,31 @@ cat auto.cnf
 TID是一个:自增长的数据,从1开始
 server-uuid=4957529a-93d6-11ed-bd8f-080027dd4b93
 
-GTID幂等性
+⚠️GTID幂等性
 如果拿有GTID的日志去恢复时,检查当前系统中是否有相同的GTID,如果有则忽略该操作
 
-开启GTID:
+### 开启GTID:
 在配置文件中:
+```ini
 [mysqld]
 gtid-mode=on
 enforce-gtid-consistency=true
-
+```
 GTID截取:
-mysqlbinlog --include-gtids='4957529a-93d6-11ed-bd8f-080027dd4b93:5-7' mysql_bin.000004 >tmp.sql (★★★使用该命令产生的sql文件,会报错,因为导入时候连同gtid一起复制过来,由于幂等性,导致这些重复的gtid事务被忽略未执行)
-mysqlbinlog --skip-gtids --include-gtids='4957529a-93d6-11ed-bd8f-080027dd4b93:5-7' mysql_bin.000004 >tmp.sql (正确做法,加入--skip-gtids不复制gtid,回复时当新的事务对待)
+`mysqlbinlog --include-gtids='4957529a-93d6-11ed-bd8f-080027dd4b93:5-7' mysql_bin.000004 >tmp.sql`\
+ ⚠️使用该命令产生的sql文件,会报错,因为导入时候连同gtid一起复制过来,由于幂等性,导致这些重复的gtid事务被忽略未执行\
+ 正确做法:加入--skip-gtids不复制gtid,恢复时当新的事务对待
+ ```sh
+ mysqlbinlog --skip-gtids --include-gtids='4957529a-93d6-11ed-bd8f-080027dd4b93:5-7' mysql_bin.000004 >tmp.sql
+ ```
 
-二进制日志的清理
+### binlog的清理
+设置的依据:至少1轮全被周期长度+1天\
 配置文件:
+```ini
 expire_logs_days=15
-设置的依据:至少1轮全被周期长度+1天
+```
+
 
 ## 使用日志恢复实例:
 ### 建库建表
@@ -132,7 +140,9 @@ mysqlbinlog --start-position=1773 --stop-position=2723 mysql_bin.000003 >tmp.sql
 ```
 ### 恢复binlog
 当前会话临时关闭binlog
+```sql
 set sql_log_bin=0;
 source /data/tmp.sql
 set sql_log_bin=1;
+```
 

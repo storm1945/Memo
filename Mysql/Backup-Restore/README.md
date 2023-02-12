@@ -52,7 +52,7 @@
 其他特殊参数
 + -F 备份时同时flush binlog
 + --master-data 以注释形式(=2时)将binlog的当前文件和position号记录下来.自动锁表
-+ --single-transation 对于innodb进行快照备份,使所有表一致的dump出来在一个事务中.
++ --single-transation 对于innodb进行快照备份,使所有表一致的dump出来.
 
 ## mysqldump的完整命令
 ```sh

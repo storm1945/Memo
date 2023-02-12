@@ -5,7 +5,7 @@ SQL语句的引入:
 结构化查询语言 DQL DDL DML DCL (query,define,manipulate,control)
 
 ## 三个层次:连接层,SQL语句处理层,存储引擎层
-![三个层次](Mysql\Architecture\layers.jpeg "三个层次")
+![三个层次](https://github.com/storm1945/Memo/blob/master/Mysql/Architecture/Mysql%5CArchitecture%5Clayers.jpeg "三个层次")
 
 连接层 两种协议 socket，tcpip
 1. 提供链接协议

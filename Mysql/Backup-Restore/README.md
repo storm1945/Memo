@@ -1,3 +1,14 @@
+## 常用命令
+### 全备语句
+```sh
+mysqldump -S mysql.sock -A --triggers -R --master-data=2 -F --single-transaction --set-gtid-purged=OFF --max_allowed_packet=256M|gzip > /data/mysql/3306/backup/full_$(date +%F-%T).sql.gz
+```
+### 解压缩
+```sh
+gzip -dk file.gz
+```
++ -d解压
++ -k保留源文件
 ## 备份策略的设计
 备份周期:
 根据数据量.80G每天做全备\
@@ -114,3 +125,15 @@ source /data/mysql/3306/backup/full.sql;
 source /data/mysql/3306/log/tmp.sql;
 set sql_log_bin=1;
 ```
+
+## 案例
+### 描述
+背景: 正在运行的网站系统,mysql-5.7,数据量50G,日业务增量1-5M\
+备份策略: 每天23:00进行全备mysqldump,在单独的备份服务器\
+故障时间点: 模拟周三上午10点误删除数据库,并进行恢复
+### 恢复
+思路:\
+1. 停业务,挂维护页,避免数据的二次伤害
+2. 找一个临时库,恢复周三23:00的全备
+3. 截取周二23:00-周三10点之间误删除的binlog,恢复到临时库
+4. 

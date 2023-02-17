@@ -1,8 +1,10 @@
-## 常用命令
-### 全备语句
+# 常用命令
+## 逻辑全备语句
 ```sh
 mysqldump -S mysql.sock -A --triggers -R --master-data=2 -F --single-transaction --set-gtid-purged=OFF --max_allowed_packet=256M|gzip > /data/mysql/3306/backup/full_$(date +%F-%T).sql.gz
 ```
+
+# 逻辑备份
 ### 解压缩
 ```sh
 gzip -dk file.gz
@@ -136,4 +138,51 @@ set sql_log_bin=1;
 1. 停业务,挂维护页,避免数据的二次伤害
 2. 找一个临时库,恢复周三23:00的全备
 3. 截取周二23:00-周三10点之间误删除的binlog,恢复到临时库
-4. 
+4. 将临时库还原回主库 或者 将业务切换到临时库\
+截取binlog，使用tail截取最后一百个，使用grep过滤。:
+```sh
+mysql -e "show binlog events in 'mysql_bin.000003';" |tail -100 |grep -i insert
+```
+
+## 闪回工具
+binlog2sql用于分析RAW格式的DML语句，产生相反的语句，恢复误删除误修改的行。
+
+# 物理备份
+## 工具安装
+```sh
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+yum -y install perl perl-devel libaio libaio-devel perl-Time-HiRes perl-DBD-MySQL libev
+wget https://www.percona.com/downloads/XtraBackup/Percona-XtraBackup-2.4.12/binary/redhat/7/x86_64/percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm
+yum -y install percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm
+```
+## 备份原理
+1. 对于非Innodb表（比如 myisam）是，锁表cp数据文件，属于一种温备份。
+2. 对于Innodb的表（支持事务的），不锁表，拷贝数据页，最终以数据文件的方式保存下来，把一部分redo和undo一并备走，属于热备方式。
+
+过程:\
+1. xbk备份执行的瞬间,也就是checkpoint,已提交的数据脏页,从内存刷写到磁盘,并记录此时的LSN号
+2. 备份时，拷贝磁盘数据页，并且记录备份过程中产生的redo和undo一起拷贝走,也就是checkpoint LSN之后的日志
+3. 在恢复之前，模拟Innodb“自动故障恢复”的过程，将redo（前滚）与undo（回滚）进行应用
+4. 恢复过程是cp 备份到原来数据目录下
+
+## 备份命令
+```sh
+innobackupex --user=root --socket=mysql.sock ./backup/
+```
+
+## 备份出的文件解析
+```sh
+backup_type = full-backuped
+from_lsn = 0 ##全备都是0开始
+to_lsn = 9769790  ##命令开始执行时候的LSN号
+last_lsn = 9769799 ##命令开始执行结束的LSN号，只差9个代表无差别，是xtrabackup处理产生的，没有新业务。
+compact = 0
+recover_binlog_info = 0
+```
+## 恢复全备
+```sh
+innobackupex --apply-log 2023-02-17_19-39-30 #先要加载redo undo日志
+innobackupex --user=root --defaults-file=my.cnf --copy-back 2023-02-17_19-39-30 #开始恢复
+chown -R mysql.mysql /3306/data #修改文件权限
+```
+⚠️my.cnf文件似乎只能认识`[mysqld]`下的datadir等其他参数。

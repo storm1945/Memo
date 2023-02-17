@@ -1,5 +1,7 @@
 # 查询
 ## 查询文件
+### 查看文件类型
+file xxx
 ### 按文件名查找
 `find / -name *mysql*`
 ### 树形目录
@@ -11,6 +13,7 @@
 `netstat -lnp|grep 330`
 ## 进程查询
 `ps -ef|grep mysql`
+
 
 # 文件操作
 ## 创建

@@ -167,7 +167,7 @@ yum -y install percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm
 
 ## 备份命令
 ```sh
-innobackupex --user=root --socket=mysql.sock ./backup/
+innobackupex --user=root --socket=mysql.sock --no-timestamp /data/mysql/3306/backup/full 
 ```
 
 ## 备份出的文件解析
@@ -185,4 +185,48 @@ innobackupex --apply-log 2023-02-17_19-39-30 #先要加载redo undo日志
 innobackupex --user=root --defaults-file=my.cnf --copy-back 2023-02-17_19-39-30 #开始恢复
 chown -R mysql.mysql /3306/data #修改文件权限
 ```
-⚠️my.cnf文件似乎只能认识`[mysqld]`下的datadir等其他参数。
+⚠️my.cnf文件似乎只能认识`[mysqld]`下的datadir等其他参数。建议修改/etc/my.cnf
+
+## 增量备份
+```sh
+innobackupex --user=root --socket=mysql.sock --no-timestamp --incremental /data/mysql/3306/backup/inc1 --incremental-basedir=/data/mysql/3306/backup/full 
+innobackupex --user=root --socket=mysql.sock --no-timestamp --incremental /data/mysql/3306/backup/inc2 --incremental-basedir=/data/mysql/3306/backup/inc1
+innobackupex --user=root --socket=mysql.sock --no-timestamp --incremental /data/mysql/3306/backup/inc3 --incremental-basedir=/data/mysql/3306/backup/inc2
+```
+
+## 增量恢复
++ 增量备份不能单独恢复
++ 增量必须按照顺序合并到全备(LSN号码)
++ 所欲备份必须要--apply-log进行整理备份
++ 除掉最后一个增量以外的其他备份,需要--redo-only.防止回滚造成LSN不连续
+
+开始恢复:\
+1. 整理全备
+```sh
+innobackupex --apply-log --redo-only /data/mysql/3306/backup/full #⚠️需要--redo-only因为非最后一个增量
+```
+2. 整理inc1并合并到full
+```sh
+innobackupex --apply-log --redo-only /data/mysql/3306/backup/full --incremental-dir=/data/mysql/3306/backup/inc1
+```
+合并结果对比checkpoint文件中的LSN号
+```sh
+full:
+from_lsn = 0
+to_lsn = 9823630
+last_lsn = 9823639 #full 的last lsn和inc1的last lsn相等,说明合并成功
+inc1:
+from_lsn = 9815246
+to_lsn = 9823630
+last_lsn = 9823639 #full 的last lsn和inc1的last lsn相等,说明合并成功
+```
+3. 整理inc2并合并到full
+```sh
+#⚠️不带--redo-only因为是最后一个
+innobackupex --apply-log /data/mysql/3306/backup/full --incremental-dir=/data/mysql/3306/backup/inc2 
+```
+4. 最终整理full
+```sh
+innobackupex --apply-log /data/mysql/3306/backup/full
+#⚠️不带--redo-only 将没有回滚的事务回滚完
+```

@@ -19,6 +19,7 @@ mysqlbinlog -d 库名 --base64-output=decode-rows -vvv mysql_bin.000003 #按库�
 ```sh
 mysqlbinlog --base64-output=decode-rows -vvv --start-position=1485 --stop-position=1708 mysql_bin.000003 
 ```
++ `reset master;`重置日志,从mysql_bin.000001开始
 
 # 错误日志
 配置:

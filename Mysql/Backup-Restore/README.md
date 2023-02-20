@@ -230,3 +230,10 @@ innobackupex --apply-log /data/mysql/3306/backup/full --incremental-dir=/data/my
 innobackupex --apply-log /data/mysql/3306/backup/full
 #⚠️不带--redo-only 将没有回滚的事务回滚完
 ```
+5. binlog分析截取
+```sh
+cat xtrabackup_binlog_info
+```
+
+## 只恢复一个表的思路
+直接把物理备份中的表恢复回去,再追加日志中相关的内容.

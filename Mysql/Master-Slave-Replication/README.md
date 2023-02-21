@@ -29,8 +29,8 @@
 1. 准备实例
 2. 权限
 ```sql
-create user repl@'150.158.138.78' identified by '123';
-grant replication slave on *.* to repl@'150.158.138.78';
+create user repl@'%' identified by '123';
+grant replication slave on *.* to repl@'%';
 ```
 3. 备份主库,找到备份结束的position
 4. 从库中恢复
@@ -41,8 +41,8 @@ MASTER_HOST='150.158.138.78',
 MASTER_USER='repl',
 MASTER_PASSWORD='123',
 MASTER_PORT=3306,
-MASTER_LOG_FILE='mysql_bin.000002',
-MASTER_LOG_POS=194,
+MASTER_LOG_FILE='mysql_bin.000004',
+MASTER_LOG_POS=637,
 MASTER_CONNECT_RETRY=10;
 ```
 6. 启动线程
@@ -304,7 +304,15 @@ log-slave-updates=1                 #slave更新是否记入日志
 配置过程同普通主从,主要区别是在,且从库的binlog是强制需要开启的.
 ```SQL
 CHANGE MASTER TO 
-MASTER_AUTO_POSITION=1  --普通的是binlog相关的设置
+MASTER_HOST='150.158.138.78',
+MASTER_USER='repl',
+MASTER_PASSWORD='123',
+MASTER_PORT=3306,
+MASTER_CONNECT_RETRY=10,
+MASTER_AUTO_POSITION=1; 
+--普通的是binlog相关的设置
+--MASTER_LOG_FILE='mysql_bin.000004',
+--MASTER_LOG_POS=637,
 ```
 ⚠️主库备份时候GTID-PURGE一定要ON,通过备份中`SET @@GLOBAL.GTID_PURGED=‘e024c334-8b64-11e9-80dc-fa163e4bfc29:1-761734’;`告诉从库GTID复制起点.
 ### 在GTID下从库写入故障

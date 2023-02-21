@@ -19,6 +19,11 @@ grant all on *.* to oldboy@'%';
 (`*.*` 指那些数据库，表)\
 (all 也可以 SELECT，DELETE，INSERT，UPDATE等)
 
+删除权限:
+```sql
+drop user oldboy@'%'
+```
+
 撤销权限:
 ```sql
 revoke DELETE on *.* from oldboy@'%';

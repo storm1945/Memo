@@ -316,18 +316,3 @@ Retrieved_Gtid_Set: cad5ab8f-aec6-11ed-81eb-5254003bb641:1-3 #从主库获得三
 ```
 解决方法: 可以通过从库输入空的begin; commit;事务占据两个位置,但是有风险,一般不使用
 
-## 主从架构演变
-### 基础架构
-+ 一主一从
-+ 一主多从
-+ 双主结构
-+ 多级主从
-+ 循环复制
-+ MGR (主流)
-### 高级架构演变(需要第三方软件)
-+ 高可用构架\
-  单活: KA+2主+从(MMM),MHA(三节点,1主2从),TMHA(1主1从)\
-  多活: NDB Cluster,InnoDB cluster,PXC(Percona XtraDB Cluster), MGC(MariaDB Galera Cluster)
-+ 高性能构架\
-  - 读写分离架构:Atlas(360),Cobar,ProxySQL(Percona),MySQL Router(Oracle),Maxscale,Mycat
-  - 分布式架构:Mycat,Atlas-Sharding(360),TDDL(淘宝),InnoDB cluster

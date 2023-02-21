@@ -1,12 +1,14 @@
 ## 官方源安装
 1. 查看是否存在其他版本`yum list installed | grep mysql`
 2. 访问[MySQL Yum Repository](https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/linux-installation-yum-repo.html)获得官方yum源并下载
-3. `yum localinstall mysql80-community-release-el7-7.noarch.rpm`
+3. `yum localinstall mysql80-community-release-el7-7.noarch.rpm`\
+    或者`vim /etc/yum.repos.d/mysql-community.repo`
 4. 查看源是否正常安装`yum repolist all | grep mysql`
 5. 选择版本
 ```sh
 yum-config-manager --disable mysql80-community
 yum-config-manager --enable mysql57-community
+dnf config-manager --disable mysql80-community
 ```
 6. 安装`yum install mysql-community-server`\
 7. 启动
@@ -69,7 +71,7 @@ mysqld --initialize --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/
 ```sh
 whereis mysql
 rm -rf /data/mysql/3306/data/*
-mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3306
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3306/data
 ```
 ## 启动配置
 ```ini
@@ -77,7 +79,7 @@ cat >/etc/my.cnf <<EOF
 [mysqld]
 user=mysql
 basedir=/usr/bin/mysql
-datadir=/data/mysql/3306
+datadir=/data/mysql/3306/data
 socket=/var/lib/mysql/mysql.sock
 server_id=6
 port=3306

@@ -147,6 +147,72 @@ masterha_check_status --conf=/etc/masterha_default.cnf
 ## 故障模拟及修复
 模拟主机宕机 pkill mysqld,MHA会切换主机到从机节点,并把该从机该为主节点,并使另外一节点作为他的从机,并在cnf文件中删除有问题的节点.并关闭MHA\
 修复方法:修复数据库,恢复主从结构,加入配置文件,重启MHA
-## MHA的VIP功能(应用程序透明服务)
+## MHA的VIP功能(应用程序透明服务)(监控节点添加)
+### 准备脚本文件
+master_ip_failover为第三方脚本,自行下载,有些不能运行,配置好以后可以使用`masterha_check_repl --conf=/etc/masterha_default.cnf`查看是否好用.
+```sh
+cd /usr/local/bin/
+chmod 755 master_ip_failover
+dos2unix master_ip_failover
+# !!! 需要转换否则脚本文件字符出错
+```
+修改其中的
+```sh
+vim /usr/local/bin/master_ip_failover
+# 主库的eth0 IP ,需要在同一个号段,主库虚拟对外服务的IP./24是掩码位数8*3=24位
+my $vip = '10.0.4/24';
+my $key = '1';
+my $ssh_start_vip = "/sbin/ifconfig eth0:$key $vip";
+my $ssh_stop_vip = "/sbin/ifconfig eth0:$key down";
+# 建立临时子网卡 例如eth0:1 ,地址需要跟主网路一个IP段
+```
+### 添加配置文件
+```sh
+vim /etc/masterha_default.cnf
+[server default]
 master_ip_failover_script=/usr/local/bin/master_ip_failover
-注意：/usr/local/bin/master_ip_failover，必须事先准备好
+```
+### 主库手动生成虚拟子网卡
+因为该脚本在发生故障的时候才会被调用,第一次启动需要手动配置主库子网卡eth0:1\
+```sh
+ifconfig eth0:1 10.0.4.20/24
+```
+### 重启manager
+```sh
+masterha_stop --conf=/etc/masterha_default.cnf
+nohup masterha_manager --conf=/etc/masterha_default.cnf --remove_dead_master_conf --ignore_last_failover  < /dev/null> /var/log/mha/app1/manager.log 2>&1 &
+```
+### 测试
+当down掉主机的数据库实例时,可以观察到在从机的网卡上出现`eth0:1 10.0.4.20/24`,代表业务已经切到从机上.其他步骤同普通切换过程.
+
+## 警告发送
+略
+
+## Binlog server配置
+### 介绍
+配置一个单独的机器与主机binlog 同步,用于主机宕机时修复从机的数据.
+### 配置
+binlogserver配置：\
+找一台额外的机器，必须要有5.6以上的版本，支持gtid并开启
+```sh
+vim /etc/mha/app1.cnf 
+[binlog1]
+no_master=1
+hostname=10.0.0.53
+master_binlog_dir=/data/mysql/binlog
+### !!!这里的master_binlog_dir一定要和主机的master binlog不同.
+```
+目录建立: \
+```sh
+mkdir -p /data/mysql/binlog
+chown -R mysql.mysql /data/*
+```
+修改完成后，将主库binlog拉过来（从000001开始拉，之后的binlog会自动按顺序过来）\
+```sh
+# !!!必须进入到自己创建好的目录
+cd /data/mysql/binlog     
+mysqlbinlog  -R --host=10.0.0.52 --user=mha --password=mha --raw  --stop-never mysql-bin.000001 &
+# !!!开始持续拉取主机binlog,注意选择合适的binlog起点.拉取日志的起点,需要按照目前从库的已经获取到的二进制日志点为起点
+```
+### 故障处理过程
+当MHA执行基于GTID的故障转移时，MHA会先检查binlog服务器，如果binlog server记录的BINLOG在其他从属服务器之前，MHA在恢复之前将来自binlog server的差异binlog event应用到新master，如果没有binlogserver，使用gtid的情况下将不会去主库拉取差异日志。

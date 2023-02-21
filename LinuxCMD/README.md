@@ -65,3 +65,7 @@ EOF
 `systemctl start/stop/enable/disable/status mysqld`
 ## 进程管理
 `pkill mysqld`
+
+#安装包
+## sz命令 
+`yum install lrzsz -y`

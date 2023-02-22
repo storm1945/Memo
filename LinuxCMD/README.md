@@ -49,6 +49,9 @@ cat >>/data/mysql/3307/my.cnf <<EOF
 socket=/var/lib/mysql/mysql.sock
 EOF
 ```
+# 系统管理
+## rpm -ivh xxxx.rpm
+安装rpm
 # VIM
 ## 退出
 保存退出`:wq`\
@@ -57,7 +60,7 @@ EOF
 移动到文本开头 `gg`
 移动到末行`G`
 ## 删除
-删除行 `dG`
+删除行 `dd`
 # 系统
 ## 远程登录
 `ssh root@150.158.138.78`
@@ -66,6 +69,6 @@ EOF
 ## 进程管理
 `pkill mysqld`
 
-#安装包
+# 安装包
 ## sz命令 
 `yum install lrzsz -y`

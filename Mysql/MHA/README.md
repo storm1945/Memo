@@ -216,3 +216,6 @@ mysqlbinlog  -R --host=10.0.0.52 --user=mha --password=mha --raw  --stop-never m
 ```
 ### 故障处理过程
 当MHA执行基于GTID的故障转移时，MHA会先检查binlog服务器，如果binlog server记录的BINLOG在其他从属服务器之前，MHA在恢复之前将来自binlog server的差异binlog event应用到新master，如果没有binlogserver，使用gtid的情况下将不会去主库拉取差异日志。
+
+# 读写分离
+[下载Atlas 2.2.1 RPM文件](https://github.com/Qihoo360/Atlas/releases/tag/2.2.1)

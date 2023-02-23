@@ -1,0 +1,168 @@
+cat >/etc/my.cnf<<EOF
+[mysqld@3306]
+datadir=/data/mysql/3306/data
+socket=/data/mysql/3306/mysql.sock
+pid-file=/var/run/mysqld/mysqld.pid
+port=3306
+server_id=5
+log-error=/data/mysql/3306/log/mysqld-3306.log
+slow_query_log=1
+slow_query_log_file=/data/mysql/3306/log/slow.log
+long_query_time=0.1
+log_queries_not_using_indexes
+log_bin=/data/mysql/3306/log/mysql_bin
+binlog_format=row
+expire_logs_days=15
+gtid-mode=on
+enforce-gtid-consistency=true
+autocommit=0
+log-slave-updates=1
+
+[mysqld@3307]
+datadir=/data/mysql/3307/data
+socket=/data/mysql/3307/mysql.sock
+pid-file=/var/run/mysqld/mysqld.pid
+port=3307
+server_id=6
+log-error=/data/mysql/3307/log/mysqld-3307.log
+slow_query_log=1
+slow_query_log_file=/data/mysql/3307/log/slow.log
+long_query_time=0.1
+log_queries_not_using_indexes
+log_bin=/data/mysql/3307/log/mysql_bin
+binlog_format=row
+expire_logs_days=15
+gtid-mode=on
+enforce-gtid-consistency=true
+autocommit=0
+
+[mysqld@3308]
+datadir=/data/mysql/3308/data
+socket=/data/mysql/3308/mysql.sock
+pid-file=/var/run/mysqld/mysqld.pid
+port=3308
+server_id=7
+log-error=/data/mysql/3308/log/mysqld-3308.log
+slow_query_log=1
+slow_query_log_file=/data/mysql/3308/log/slow.log
+long_query_time=0.1
+log_queries_not_using_indexes
+log_bin=/data/mysql/3308/log/mysql_bin
+binlog_format=row
+expire_logs_days=15
+gtid-mode=on
+enforce-gtid-consistency=true
+autocommit=0
+log-slave-updates=1
+
+[mysqld@3309]
+datadir=/data/mysql/3309/data
+socket=/data/mysql/3309/mysql.sock
+pid-file=/var/run/mysqld/mysqld.pid
+port=3309
+server_id=8
+log-error=/data/mysql/3309/log/mysqld-3309.log
+slow_query_log=1
+slow_query_log_file=/data/mysql/3309/log/slow.log
+long_query_time=0.1
+log_queries_not_using_indexes
+log_bin=/data/mysql/3309/log/mysql_bin
+binlog_format=row
+expire_logs_days=15
+gtid-mode=on
+enforce-gtid-consistency=true
+autocommit=0
+EOF
+
+mkdir -p /data/mysql/{3306,3307,3308,3309}/{log,data,backup}
+chown -R mysql.mysql /data/mysql
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3306/data
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3307/data
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3308/data
+mysqld --initialize-insecure --user=mysql --basedir=/usr/bin/mysql --datadir=/data/mysql/3309/data
+
+systemctl start mysqld@3306
+systemctl start mysqld@3307
+systemctl start mysqld@3308
+systemctl start mysqld@3309
+
+systemctl stop mysqld@3306
+systemctl stop mysqld@3307
+systemctl stop mysqld@3308
+systemctl stop mysqld@3309
+
+mysql -S /data/mysql/3306/mysql.sock -e "select @@server_id,@@port"
+mysql -S /data/mysql/3307/mysql.sock -e "select @@server_id,@@port"
+mysql -S /data/mysql/3308/mysql.sock -e "select @@server_id,@@port"
+mysql -S /data/mysql/3309/mysql.sock -e "select @@server_id,@@port"
+
+47.96.167.195 3306 1
+47.96.167.195 3307 2
+47.96.167.195 3308 3
+47.96.167.195 3309 4
+
+120.55.54.37 3306 5
+120.55.54.37 3307 6
+120.55.54.37 3308 7
+120.55.54.37 3309 8
+
+db1						db2
+1[2]		<-->		5(S)[6]
+3(S)[4]		<-->		7[8]
+
+配置双主
+db1:
+mysql -S /data/mysql/3306/mysql.sock -e "use mysql;update user set Host='%' where User='root';flush privileges;"
+mysql -S /data/mysql/3306/mysql.sock -e "grant replication slave on *.* to repl@'%' identified by '123'"
+mysql -S /data/mysql/3308/mysql.sock -e "use mysql;update user set Host='%' where User='root';flush privileges;"
+mysql -S /data/mysql/3308/mysql.sock -e "grant replication slave on *.* to repl@'%' identified by '123'"
+
+db2:
+mysql -S /data/mysql/3306/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+mysql -S /data/mysql/3308/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+
+db1:
+mysql -S /data/mysql/3306/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+mysql -S /data/mysql/3308/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+
+配置从机
+db1:
+mysql -S /data/mysql/3307/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+mysql -S /data/mysql/3309/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+
+db2:
+mysql -S /data/mysql/3307/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+mysql -S /data/mysql/3309/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+
+
+mysql -S /data/mysql/3306/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
+mysql -S /data/mysql/3307/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
+mysql -S /data/mysql/3308/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
+mysql -S /data/mysql/3309/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
+
+rm -rf /data/mysql/3306/data/*
+rm -rf /data/mysql/3307/data/*
+rm -rf /data/mysql/3308/data/*
+rm -rf /data/mysql/3309/data/*
+
+rm -rf /data/mysql/3306/log/*
+rm -rf /data/mysql/3307/log/*
+rm -rf /data/mysql/3308/log/*
+rm -rf /data/mysql/3309/log/*
+
+
+
+grant all on *.* to oldboy@'%';
+
+mysql -S /data/mysql/3306/mysql.sock -e "grant replication slave on *.* to repl;"
+
+grant replication slave on *.* to repl@'%' identified by '123';
+grant all  on *.* to root@localhost identified by '123'  with grant option;
+
+mysql -S /data/3307/mysql.sock -e "stop slave; reset slave all;"
+mysql -S /data/3308/mysql.sock -e "stop slave; reset slave all;"
+mysql -S /data/3309/mysql.sock -e "stop slave; reset slave all;"
+mysql -S /data/3310/mysql.sock -e "stop slave; reset slave all;"
+
+mysqldump -S mysql.sock -A --triggers -R --master-data=2 --single-transaction --set-gtid-purged=ON >/data/mysql/3306/backup/full.sql
+mysqldump -S mysql.sock -A --triggers -R --master-data=2 --single-transaction --set-gtid-purged=OFF --max_allowed_packet=256M|gzip > /data/mysql/3306/backup/full_$(date +%F-%T).sql.gz

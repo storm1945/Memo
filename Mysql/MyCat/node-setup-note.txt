@@ -96,15 +96,15 @@ mysql -S /data/mysql/3307/mysql.sock -e "select @@server_id,@@port"
 mysql -S /data/mysql/3308/mysql.sock -e "select @@server_id,@@port"
 mysql -S /data/mysql/3309/mysql.sock -e "select @@server_id,@@port"
 
-47.96.167.195 3306 1
-47.96.167.195 3307 2
-47.96.167.195 3308 3
-47.96.167.195 3309 4
+47.96.167.195:3306 1
+47.96.167.195:3307 2
+47.96.167.195:3308 3
+47.96.167.195:3309 4
 
-120.55.54.37 3306 5
-120.55.54.37 3307 6
-120.55.54.37 3308 7
-120.55.54.37 3309 8
+120.55.54.37:3306 5
+120.55.54.37:3307 6
+120.55.54.37:3308 7
+120.55.54.37:3309 8
 
 db1						db2
 1[2]		<-->		5(S)[6]
@@ -117,23 +117,18 @@ mysql -S /data/mysql/3306/mysql.sock -e "grant replication slave on *.* to repl@
 mysql -S /data/mysql/3308/mysql.sock -e "use mysql;update user set Host='%' where User='root';flush privileges;"
 mysql -S /data/mysql/3308/mysql.sock -e "grant replication slave on *.* to repl@'%' identified by '123'"
 
-db2:
-mysql -S /data/mysql/3306/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
-mysql -S /data/mysql/3308/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
-
 db1:
 mysql -S /data/mysql/3306/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 mysql -S /data/mysql/3308/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 
-配置从机
-db1:
 mysql -S /data/mysql/3307/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 mysql -S /data/mysql/3309/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 
 db2:
+mysql -S /data/mysql/3306/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
+mysql -S /data/mysql/3308/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='47.96.167.195', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 mysql -S /data/mysql/3307/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
 mysql -S /data/mysql/3309/mysql.sock -e "CHANGE MASTER TO MASTER_HOST='120.55.54.37', MASTER_PORT=3308, MASTER_AUTO_POSITION=1, MASTER_USER='repl', MASTER_PASSWORD='123';start slave;"
-
 
 mysql -S /data/mysql/3306/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
 mysql -S /data/mysql/3307/mysql.sock -e "show slave status \G" |grep Executed_Gtid_Set
@@ -159,10 +154,32 @@ mysql -S /data/mysql/3306/mysql.sock -e "grant replication slave on *.* to repl;
 grant replication slave on *.* to repl@'%' identified by '123';
 grant all  on *.* to root@localhost identified by '123'  with grant option;
 
-mysql -S /data/3307/mysql.sock -e "stop slave; reset slave all;"
-mysql -S /data/3308/mysql.sock -e "stop slave; reset slave all;"
-mysql -S /data/3309/mysql.sock -e "stop slave; reset slave all;"
-mysql -S /data/3310/mysql.sock -e "stop slave; reset slave all;"
 
 mysqldump -S mysql.sock -A --triggers -R --master-data=2 --single-transaction --set-gtid-purged=ON >/data/mysql/3306/backup/full.sql
 mysqldump -S mysql.sock -A --triggers -R --master-data=2 --single-transaction --set-gtid-purged=OFF --max_allowed_packet=256M|gzip > /data/mysql/3306/backup/full_$(date +%F-%T).sql.gz
+
+mysql -S /data/mysql/3306/mysql.sock -e "select count(*),@@server_id from world.city;"
+mysql -S /data/mysql/3307/mysql.sock -e "select count(*),@@server_id from world.city;"
+mysql -S /data/mysql/3308/mysql.sock -e "select count(*),@@server_id from world.city;"
+mysql -S /data/mysql/3309/mysql.sock -e "select count(*),@@server_id from world.city;"
+
+mysql -S /data/mysql/3306/mysql.sock -e ""
+mysql -S /data/mysql/3307/mysql.sock -e ""
+mysql -S /data/mysql/3308/mysql.sock -e ""
+mysql -S /data/mysql/3309/mysql.sock -e ""
+
+cat >all.sh<<EOF
+#!/bin/bash
+for((i=3306;i<=3309;i++));do
+    mysql -S /data/mysql/$i/mysql.sock -e "$1"
+done
+EOF
+
+sh ~/all.sh "stop slave;"
+sh ~/all.sh "reset master;"
+sh ~/all.sh "reset slave all;"
+
+sh ~/all.sh "start slave;"
+
+sh ~/all.sh "show master status;"
+sh ~/all.sh "show slave status \G;"

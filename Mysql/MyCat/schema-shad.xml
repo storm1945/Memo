@@ -2,12 +2,11 @@
 <!DOCTYPE mycat:schema SYSTEM "schema.dtd">  
 <mycat:schema xmlns:mycat="http://io.mycat/">
 <schema name="TESTDB" checkSQLschema="false" sqlMaxLimit="100" dataNode="dn1"> 
-    <table name="city" datanode="dh1"/>  
-    <table name="countrylanguage" datanode="dh2"/> 
-</schema>  
+    <table name="city" dataNode="dh1"/>  
+    <table name="countrylanguage" dataNode="dh2"/> 
+</schema>
     <dataNode name="dn1" dataHost="dh1" database= "world" />  
     <dataNode name="dn2" dataHost="dh2" database= "world" />
-
     <dataHost name="dh1" maxCon="1000" minCon="10" balance="1"  writeType="0" dbType="mysql"  dbDriver="native" switchType="1"> 
         <heartbeat>select user()</heartbeat>  
     <writeHost host="db1" url="47.96.167.195:3306" user="root" password=""> 
@@ -16,7 +15,7 @@
     <writeHost host="db3" url="120.55.54.37:3306" user="root" password=""> 
             <readHost host="db4" url="120.55.54.37:3307" user="root" password="" /> 
     </writeHost>
-
+    </dataHost>
     <dataHost name="dh2" maxCon="1000" minCon="10" balance="1"  writeType="0" dbType="mysql"  dbDriver="native" switchType="1"> 
         <heartbeat>select user()</heartbeat>  
     <writeHost host="db1" url="47.96.167.195:3308" user="root" password=""> 
@@ -25,5 +24,5 @@
     <writeHost host="db3" url="120.55.54.37:3308" user="root" password=""> 
             <readHost host="db4" url="120.55.54.37:3309" user="root" password="" /> 
     </writeHost>
-
+    </dataHost>
 </mycat:schema>

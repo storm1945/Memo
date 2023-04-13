@@ -156,3 +156,8 @@ net:
 security:
    authorization: enabled
 ```
+## mongodb复制集RS(ReplicationSet)
+### 基本原理
+基本构成是1主2从的结构，自带互相监控投票机制（Raft（MongoDB）  Paxos（mysql MGR 用的是变种））\
+如果发生主库宕机，复制集内部会进行投票选举，选择一个新的主库替代原有主库对外提供服务。同时复制集会自动通知\
+客户端程序，主库已经发生切换了。应用就会连接到新的主库。\

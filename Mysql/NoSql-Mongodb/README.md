@@ -161,3 +161,68 @@ security:
 基本构成是1主2从的结构，自带互相监控投票机制（Raft（MongoDB）  Paxos（mysql MGR 用的是变种））\
 如果发生主库宕机，复制集内部会进行投票选举，选择一个新的主库替代原有主库对外提供服务。同时复制集会自动通知\
 客户端程序，主库已经发生切换了。应用就会连接到新的主库。\
+### 配置多实例
+使用附件中.sh文件
+### 配置普通复制集
+```c
+mongosh --port 28018 admin
+config = {_id: 'my_repl', members: [
+                          {_id: 0, host: '127.0.0.1:28018'},
+                          {_id: 1, host: '127.0.0.1:28019'},
+                          {_id: 2, host: '127.0.0.1:28020'}]
+          }                   
+rs.initiate(config) 
+```
+### 1主1从1个arbiter
+```c
+mongosh --port 28018 admin
+config = {_id: 'my_repl', members: [    //创建变量config，送到下面进行初始化
+                          {_id: 0, host: '127.0.0.1:28018'},
+                          {_id: 1, host: '127.0.0.1:28019'},
+                          {_id: 2, host: '127.0.0.1:28020',"arbiterOnly":true}]
+          }                   
+rs.initiate(config) 
+```
+### 复制集管理操作
+```c
+rs.status();    //查看整体复制集状态
+rs.isMaster(); // 查看当前是否是主节点
+rs.conf()；   //查看复制集配置信息
+```
+### 添加删除节点
+```c
+rs.remove("ip:port"); // 删除一个节点
+rs.add("ip:port"); // 新增从节点
+rs.addArb("ip:port"); // 新增仲裁节点
+```
+
+例子：\
+添加 arbiter节点\
+1. 连接到主节点
+[mongod@db03 ~]$ mongo --port 28018 admin
+2. 添加仲裁节点
+my_repl:PRIMARY> rs.addArb("127.0.0.1:28020")
+3. 查看节点状态
+```c 
+my_repl:PRIMARY> rs.isMaster()
+{
+    "hosts" : [
+        "10.0.0.53:28017",
+        "10.0.0.53:28018",
+        "10.0.0.53:28019"
+    ],
+    "arbiters" : [
+        "10.0.0.53:28020"
+    ],
+}
+rs.remove("ip:port"); // 删除一个节点
+```
+例子：
+my_repl:PRIMARY> rs.remove("10.0.0.53:28019");
+{ "ok" : 1 }
+my_repl:PRIMARY> rs.isMaster()
+rs.add("ip:port"); // 新增从节点
+例子：
+my_repl:PRIMARY> rs.add("10.0.0.53:28019")
+{ "ok" : 1 }
+my_repl:PRIMARY> rs.isMaster()

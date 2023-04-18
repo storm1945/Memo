@@ -218,11 +218,15 @@ my_repl:PRIMARY> rs.isMaster()
 rs.remove("ip:port"); // 删除一个节点
 ```
 例子：
+```c 
 my_repl:PRIMARY> rs.remove("10.0.0.53:28019");
 { "ok" : 1 }
 my_repl:PRIMARY> rs.isMaster()
 rs.add("ip:port"); // 新增从节点
+```
 例子：
+```c 
 my_repl:PRIMARY> rs.add("10.0.0.53:28019")
 { "ok" : 1 }
 my_repl:PRIMARY> rs.isMaster()
+```

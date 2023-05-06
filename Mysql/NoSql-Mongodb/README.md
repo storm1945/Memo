@@ -230,3 +230,54 @@ my_repl:PRIMARY> rs.add("10.0.0.53:28019")
 { "ok" : 1 }
 my_repl:PRIMARY> rs.isMaster()
 ```
+
+### 特殊节点
++ arbiter节点：主要负责选主过程中的投票，但是不存储任何数据，也不提供任何服务
++ hidden节点：隐藏节点，不参与选主，也不对外提供服务。
++ delay节点：延时节点，数据落后于主库一段时间，因为数据是延时的，也不应该提供服务或参与选主，所以通常会配合hidden（隐藏）
+一般情况下会将delay+hidden一起配置使用
+
+配置:
+```c
+cfg=rs.conf() 
+cfg.members[2].priority=0
+cfg.members[2].hidden=true
+cfg.members[2].slaveDelay=120
+rs.reconfig(cfg)   
+```
+### 副本集其他命令
+
+```c
+rs.conf() //查看副本集的配置信息
+rs.status() //查看副本集各成员的状态
+rs.stepDown() //副本集角色切换（不要人为随便操作）
+rs.freeze(300) //锁定从，使其不会转变成主库
+rs.slaveOk()//设置副本节点可读：在副本节点执行
+```
+查看副本节点（监控主从延时）
+```c
+admin> rs.printSlaveReplicationInfo()
+source: 192.168.1.22:27017
+    syncedTo: Thu May 26 2016 10:28:56 GMT+0800 (CST)
+    0 secs (0 hrs) behind the primary
+```
+
+# MongoDB Sharding Cluster 分片集群
+## 规划
+10个实例：38017-38026
+1. configserver:38018-38020 (管理分片配置)
+3台构成的复制集（1主两从，不支持arbiter）38018-38020（复制集名字configsvr）
+2. shard节点：
+sh1：38021-23    （1主两从，其中一个节点为arbiter，复制集名字sh1）
+sh2：38024-26    （1主两从，其中一个节点为arbiter，复制集名字sh2）
+3. mongos: (对外提供的节点,路由功能)
+38017
+## shard节点创建
+配置文件中,添加:
+```c
+replication:
+  oplogSizeMB: 2048
+  replSetName: sh1
+sharding:
+  clusterRole: shardsvr
+```
